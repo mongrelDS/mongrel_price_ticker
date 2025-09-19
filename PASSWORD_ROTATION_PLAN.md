@@ -12,8 +12,6 @@
 - **Action Required:** IMMEDIATE
 
 ### **2. ShipHero Credentials** 🔴
-- **Email:** `shipheronatura@gmail.com`
-- **Password:** `WQG4SjHzeq9e65a`
 - **Exposed In:** 1 Python file (now fixed with environment variables)
 - **Risk Level:** CRITICAL
 - **Action Required:** IMMEDIATE
