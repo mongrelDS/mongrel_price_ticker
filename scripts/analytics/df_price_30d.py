@@ -132,7 +132,10 @@ if __name__ == "__main__":
     print("🧪 Testing get_price_30d function...")
     
     # Test with well.ca
-    df_wellca = get_price_30d(domain='well.ca')
+    df_wellca = get_price_30d(
+        domain='well.ca',
+        verbose=True
+        )
     
     if df_wellca is not None:
         print("\n📋 Sample results:")
@@ -142,3 +145,5 @@ if __name__ == "__main__":
         print(df_wellca[['link', 'price', 'price_30d_avg', 'high', 'low']].head(10))
     else:
         print("❌ No data returned")
+
+

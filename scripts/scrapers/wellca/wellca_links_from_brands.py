@@ -35,7 +35,9 @@ db_engine = create_engine(connection_string, poolclass=NullPool)
 # Read brand links from database
 print("Reading brand links from database...")
 df_link = read_mysql_to_df(engine=db_engine, table_name='brand_link_list')
-df_link = df_link.sample(60) # sample 60 brands
+# keep only the links that start with https://well.ca/brand/
+df_link = df_link[df_link['brand_url'].str.startswith('https://well.ca/brand/')]
+df_link = df_link.sample(90) # sample 90 brands
 print(f"Selected {len(df_link)} brands for processing")
 
 # List to hold all the product links we find

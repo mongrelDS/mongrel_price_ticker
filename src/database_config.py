@@ -45,13 +45,21 @@ class DatabaseConfig:
         """Create a SQLAlchemy engine with the configured parameters."""
         connection_string = self.get_connection_string()
         
-        return create_engine(
-            connection_string,
-            poolclass=poolclass,
-            pool_size=self.pool_size,
-            max_overflow=self.max_overflow,
-            echo=False  # Set to True for SQL query logging
-        )
+        # For NullPool, we don't need pool_size and max_overflow
+        if poolclass == NullPool:
+            return create_engine(
+                connection_string,
+                poolclass=poolclass,
+                echo=False  # Set to True for SQL query logging
+            )
+        else:
+            return create_engine(
+                connection_string,
+                poolclass=poolclass,
+                pool_size=self.pool_size,
+                max_overflow=self.max_overflow,
+                echo=False  # Set to True for SQL query logging
+            )
     
     def get_credentials(self):
         """Get database credentials as a dictionary (for backward compatibility)."""

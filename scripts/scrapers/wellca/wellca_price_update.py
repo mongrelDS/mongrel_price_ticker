@@ -19,7 +19,8 @@ print(timestamp_0)
 
 
 # Add the src directory to the path so we can import our modules
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+sys.path.insert(0, src_path)
 
 # Import database functions
 from mySQL_Upsert_Function import read_mysql_to_df, upsert_df_to_mysql
@@ -28,7 +29,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 
 # Import analytics function with correct path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'analytics'))
+analytics_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'analytics'))
+sys.path.insert(0, analytics_path)
 from df_price_30d import get_price_30d
 
 # Database connection setup (using environment variables)
@@ -43,27 +45,39 @@ connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{
 # Create database engine
 db_engine = create_engine(connection_string, poolclass=NullPool)
 
-df_link = read_mysql_to_df(engine=db_engine, table_name='product_links')
-print("Available columns in product_links table:")
-print(df_link.columns.tolist())
-print("\nFirst few rows:")
-print(df_link.head())
-df_link = df_link.sample(1000)
-print(f"Selected {len(df_link)} products for processing")
+# manage the running duration
+df_duration = read_mysql_to_df(engine=db_engine, table_name='duration')
+# select rows where domain is well.ca  and type is price_update
+df_duration = df_duration[df_duration['domain'] == 'well.ca']
+df_duration = df_duration[df_duration['type'] == 'price_update']
+# calcualte the average result_per_minute
+df_duration['result_per_minute'] = df_duration['result_per_minute'].astype(float)
+result_per_minute = df_duration['result_per_minute'].mean()
+n_20_minutes = int(result_per_minute * 20)
 
+print(f"Running {n_20_minutes} products for the next 20 minutes")
+
+# Product Links
+df_link = read_mysql_to_df(engine=db_engine, table_name='product_links')
+df_link = df_link.sample(min(len(df_link), n_20_minutes))
 
 df_wellca = get_price_30d(domain='well.ca')
 #rename link to product_url
 df_wellca = df_wellca.rename(columns={'link': 'product_url'})
+
+# select all rows where price_30d_avg is null
+df_wellca = df_wellca[df_wellca['price_30d_avg'].isnull()]
+# drop rows where [tag] is 'Failed'
+df_wellca = df_wellca[df_wellca['tag'] != 'Failed']
 # sort date
 df_wellca = df_wellca.sort_values(by='date', ascending=False)
-
-# get the tail 3000 rows
-df_wellca = df_wellca.tail(3000)
 
 df_link = pd.concat([df_link, df_wellca])
 df_link = df_link.drop_duplicates(subset='product_url', keep='first')
 df_link = df_link[['product_url']]
+
+# get the tail n_20_minutes rows
+df_link = df_link.tail(n_20_minutes)
 
 
 def get_product_info(url):
@@ -174,8 +188,6 @@ df_link.loc[successful_scrapes, columns_to_update] = results_df.loc[successful_s
 # Always update the tag and date for all rows
 df_link['tag'] = results_df['tag']
 df_link['date'] = date.today()
-
-
 
 print("Scraping and updating complete.")
 print("-" * 50)
