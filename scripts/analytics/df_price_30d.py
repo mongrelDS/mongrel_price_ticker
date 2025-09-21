@@ -12,7 +12,7 @@ load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 # Import database functions
-from mySQL_Upsert_Function import read_mysql_to_df
+from mySQL_Upsert_Function_with_Batch import read_mysql_to_df
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 
