@@ -23,7 +23,7 @@ src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '
 sys.path.insert(0, src_path)
 
 # Import database functions
-from mySQL_Upsert_Function import read_mysql_to_df, upsert_df_to_mysql
+from mySQL_Upsert_Function_with_Batch import read_mysql_to_df, upsert_df_to_mysql
 from generate_key import generate_key
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool

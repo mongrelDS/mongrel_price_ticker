@@ -13,10 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Add the src directory to the path so we can import our modules
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 
 # Import database functions
-from mySQL_Upsert_Function import read_mysql_to_df, upsert_df_to_mysql
+from mySQL_Upsert_Function_with_Batch import read_mysql_to_df, upsert_df_to_mysql
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 
