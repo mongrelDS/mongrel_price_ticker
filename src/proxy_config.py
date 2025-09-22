@@ -7,6 +7,8 @@ Provides proxy configuration for web scraping with multiple proxy credentials an
 import os
 import time
 import random
+import uuid
+import hashlib
 from typing import Dict, Optional, Union, List
 from dotenv import load_dotenv
 
@@ -40,14 +42,14 @@ class ProxyConfig:
         # Define multiple proxy credentials
         self.credentials = [
             ProxyCredentials(
-                username="customer-oxyl29185902-city-boston-sessid-aigR-sesstime-30",
+                username="customer-oxyl29185902-cc-US-sessid-OMCN-sesstime-30",
                 password="ykdszwucoa_O5o",
-                city="Boston"
+                city="US"
             ),
             ProxyCredentials(
-                username="customer-mnft29185901-city-toronto-sessid-oUcO-sesstime-30",
+                username="customer-mnft29185901-cc-CA-sessid-nybl-sesstime-30",
                 password="xyspgptxmm_J9v",
-                city="Toronto"
+                city="CA"
             )
         ]
         
