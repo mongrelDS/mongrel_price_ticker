@@ -62,6 +62,9 @@
 # Cleanup success files daily at 10:00 AM
 0 10 * * 0,1,2,3,4,5 rm -f /tmp/shiphero_line_items.success /tmp/sh_to_sql_order_line_items.success /tmp/shipped_orders.success /tmp/product_table.success /tmp/natura_customer.success
 
+# GitHub auto-update (hourly)
+0 * * * * /bin/bash /home/mongreldatalab/mongrel_price_ticker/scripts/git_auto_push.sh >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/git_auto_push.log 2>&1
+
 # Well.ca Scraping Pipeline (unchanged)
 # Brand discovery (weekly - Sunday 2 AM)
 0 2 * * 0 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/wellca/wellca_brand_link_list.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/wellca_brand_links.log 2>&1
