@@ -11,15 +11,13 @@ import sys
 import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from datetime import datetime
 
-# Add src directory to path
-sys.path.append('/home/mongreldatalab/mongrel_price_ticker/src')
-
-# Import required functions
-from google_drive_csv_import import import_csv_from_drive
-from cleanup_column_names import clean_column_names
-from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
-from generate_key import generate_key
+# Import required functions via package
+from src.google_drive_csv_import import import_csv_from_drive
+from src.cleanup_column_names import clean_column_names
+from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from src.generate_key import generate_key
 
 def process_shipped_orders(shipped_orders):
     """Process shipped orders data for the natura_shipped_orders table"""
@@ -30,9 +28,16 @@ def process_shipped_orders(shipped_orders):
     print("✅ Column names cleaned")
     
     # Fix specific column name mismatch for database compatibility
-    if 'size_length_x_width_x_height_in' in shipped_orders.columns:
-        shipped_orders = shipped_orders.rename(columns={'size_length_x_width_x_height_in': 'size_length_x_width_x_height__in'})
+    # Some exports include a single underscore before 'in'; DB uses double underscore
+    if 'size_length_x_width_x_height_in' in shipped_orders.columns and 'size_length_x_width_x_height__in' not in shipped_orders.columns:
+        shipped_orders = shipped_orders.rename(
+            columns={'size_length_x_width_x_height_in': 'size_length_x_width_x_height__in'}
+        )
         print("✅ Fixed column name mismatch for size_length_x_width_x_height__in")
+    # Ensure the column exists even if not provided to avoid SQL errors
+    if 'size_length_x_width_x_height__in' not in shipped_orders.columns:
+        shipped_orders['size_length_x_width_x_height__in'] = None
+        print("⚠️ Added missing column 'size_length_x_width_x_height__in' with nulls")
     
     # Convert order_date to datetime
     print("📅 Converting order_date column to datetime...")
@@ -144,14 +149,18 @@ def process_customer_orderlist(shipped_orders):
 
 def main():
     """Main function to process shipped orders data from Google Drive to MySQL"""
-    
+    start_time = datetime.now()
+    results_count = 0
+    db_engine = None
     # Load environment variables
     load_dotenv()
     
     # Database connection setup
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
-    db_password = os.getenv('DB_PASSWORD', 'defaultpassword')
+    db_password = os.getenv('DB_PASSWORD')
+    if not db_password:
+        raise ValueError("DB_PASSWORD environment variable is required (no default in repo)")
     db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
     
     try:
@@ -177,8 +186,8 @@ def main():
         # Process shipped orders data
         shipped_orders_processed = process_shipped_orders(shipped_orders)
         
-        # Process customer order list data
-        customer_order_processed = process_customer_orderlist(shipped_orders)
+        # Process customer order list data (use the same 20-day filtered data)
+        customer_order_processed = process_customer_orderlist(shipped_orders_processed)
         
         # Upsert shipped orders to MySQL database
         print("\n💾 Upserting shipped orders data to MySQL database...")
@@ -204,6 +213,7 @@ def main():
         )
         print("✅ Successfully stored customer order list data")
         
+        results_count = len(shipped_orders_processed)
         print(f"\n✅ Successfully processed and stored all data")
         print(f"Shipped orders final shape: {shipped_orders_processed.shape}")
         print(f"Customer order list final shape: {customer_order_processed.shape}")
@@ -213,6 +223,26 @@ def main():
     except Exception as e:
         print(f"❌ An error occurred: {e}")
         return False
+    finally:
+        # Duration upsert
+        try:
+            end_time = datetime.now()
+            duration_min = (end_time - start_time).total_seconds() / 60
+            if db_engine is not None:
+                df_duration = pd.DataFrame({
+                    'duration_min': [duration_min],
+                    'date': [datetime.now()],
+                    'results': [results_count],
+                    'result_per_minute': [results_count / duration_min if duration_min > 0 else 0.0],
+                    'domain': ['shiphero'],
+                    'type': ['shipped_orders']
+                })
+                upsert_df_to_mysql(df=df_duration, engine=db_engine, target_table='duration', key_col='date')
+                print("✅ Upserted duration record to 'duration' table")
+            else:
+                print("⚠️ Skipped duration upsert (no DB engine)")
+        except Exception as _e:
+            print(f"⚠️ Failed to upsert duration data: {_e}")
 
 if __name__ == "__main__":
     success = main()

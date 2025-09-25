@@ -10,16 +10,11 @@ import sys
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-# Ensure project root and src are on sys.path for reliable imports under cron
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-SRC_DIR = os.path.join(PROJECT_ROOT, 'src')
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-
-# Import required functions from src package
-from google_drive_csv_import import import_csv_from_drive
-from cleanup_column_names import clean_column_names
-from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+# Import required functions via package
+from src.google_drive_csv_import import import_csv_from_drive
+from src.cleanup_column_names import clean_column_names
+from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from src.generate_key import generate_key
 
 def main():
     """Main function to process product data from Google Drive to MySQL"""
@@ -44,53 +39,59 @@ def main():
         
         # Import data from Google Drive
         print("📥 Importing product data from Google Drive...")
-        product_table = import_csv_from_drive(
-            starts_with=["product_table", "ALL_Products"],
+        line_items_table = import_csv_from_drive(
+            starts_with=["line_items_table"],
             google_drive_id="1_VV9n32idhpCu4H017Z_9ZKo80DLaSbn"
         )
         
-        if product_table is None:
+        if line_items_table is None:
             print("❌ Failed to import data from Google Drive")
             return False
         
-        print(f"✅ Successfully imported {len(product_table)} rows")
+        print(f"✅ Successfully imported {len(line_items_table)} rows")
         
         # Clean column names
-        product_table = clean_column_names(product_table)
+        line_items_table = clean_column_names(line_items_table)
         print("✅ Column names cleaned")
         
-        # Drop duplicate rows based on [sku, barcode]
-        original_rows = len(product_table)
-        product_table = product_table.drop_duplicates(subset=['sku', 'barcode'])
-        removed_duplicates = original_rows - len(product_table)
+        # Drop duplicate rows based on [sku, quantity, subtotal, order_number]
+        original_rows = len(line_items_table)
+        line_items_table = line_items_table.drop_duplicates(subset=['sku',  'quantity' ,'subtotal', 'order_number'])
+        removed_duplicates = original_rows - len(line_items_table)
         print(f"✅ Removed {removed_duplicates} duplicate rows")
-        
+        # generate key for deduplication
+        line_items_table = generate_key(
+            line_items_table,
+            deduplication_columns=['sku', 'quantity', 'subtotal', 'order_number'],
+            key_col='key'
+        )
+        print("✅ Unique keys generated")
         # Select required columns
-        required_columns = ['name', 'on_hand', 'available', 'sku', 'barcode', 'value', 'price', 'product_note', 'tags']
-        missing_columns = [col for col in required_columns if col not in product_table.columns]
+        required_columns = ['order_date', 'sku', 'name', 'quantity', 'price', 'subtotal', 'order_number', 'customer_email','key']
+        missing_columns = [col for col in required_columns if col not in line_items_table.columns]
         
         if missing_columns:
             print(f"⚠️ Missing required columns: {missing_columns}")
-            print(f"Available columns: {list(product_table.columns)}")
+            print(f"Available columns: {list(line_items_table.columns)}")
             # Use available columns that match the required ones
-            available_required = [col for col in required_columns if col in product_table.columns]
-            product_table = product_table[available_required]
+            available_required = [col for col in required_columns if col in line_items_table.columns]
+            line_items_table = line_items_table[available_required]
         else:
-            product_table = product_table[required_columns]
+            line_items_table = line_items_table[required_columns]
         
-        print(f"✅ Selected {len(product_table.columns)} columns for processing")
+        print(f"✅ Selected {len(line_items_table.columns)} columns for processing")
         
         # Upsert to MySQL database
         print("💾 Upserting data to MySQL database...")
         upsert_df_to_mysql(
-            df=product_table,
+            df=line_items_table,
             engine=db_engine,
-            target_table='natura_product_table',
-            key_col='sku'
+            target_table='natura_line_items',
+            key_col='key'
         )
         
         print("✅ Successfully processed and stored product data")
-        print(f"Final data shape: {product_table.shape}")
+        print(f"Final data shape: {line_items_table.shape}")
         
         return True
         

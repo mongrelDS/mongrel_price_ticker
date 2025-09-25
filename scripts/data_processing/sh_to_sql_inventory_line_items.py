@@ -10,6 +10,7 @@ import sys
 import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from datetime import datetime
 
 # Add src directory to path
 sys.path.append('/home/mongreldatalab/mongrel_price_ticker/src')
@@ -22,14 +23,18 @@ from generate_key import generate_key
 
 def main():
     """Main function to process inventory line items data from Google Drive to MySQL"""
-    
+    start_time = datetime.now()
+    results_count = 0
+    db_engine = None
     # Load environment variables
     load_dotenv()
     
     # Database connection setup
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
-    db_password = os.getenv('DB_PASSWORD', 'defaultpassword')
+    db_password = os.getenv('DB_PASSWORD')
+    if not db_password:
+        raise ValueError("DB_PASSWORD environment variable is required (no default in repo)")
     db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
     
     try:
@@ -89,6 +94,7 @@ def main():
             key_col='key'
         )
         
+        results_count = len(inventory_line_items)
         print("✅ Successfully processed and stored inventory line items data")
         print(f"Final data shape: {inventory_line_items.shape}")
         
@@ -97,6 +103,26 @@ def main():
     except Exception as e:
         print(f"❌ An error occurred: {e}")
         return False
+    finally:
+        # Duration upsert to 'duration' table
+        try:
+            end_time = datetime.now()
+            duration_min = (end_time - start_time).total_seconds() / 60
+            if db_engine is not None:
+                df_duration = pd.DataFrame({
+                    'duration_min': [duration_min],
+                    'date': [datetime.now()],
+                    'results': [results_count],
+                    'result_per_minute': [results_count / duration_min if duration_min > 0 else 0.0],
+                    'domain': ['shiphero'],
+                    'type': ['inventory_line_items']
+                })
+                upsert_df_to_mysql(df=df_duration, engine=db_engine, target_table='duration', key_col='date')
+                print("✅ Upserted duration record to 'duration' table")
+            else:
+                print("⚠️ Skipped duration upsert (no DB engine)")
+        except Exception as _e:
+            print(f"⚠️ Failed to upsert duration data: {_e}")
 
 if __name__ == "__main__":
     success = main()

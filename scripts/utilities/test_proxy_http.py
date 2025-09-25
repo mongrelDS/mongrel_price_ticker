@@ -4,6 +4,7 @@ Test script for residential proxy with HTTP (not HTTPS)
 """
 
 import requests
+import os
 from requests.auth import HTTPProxyAuth
 
 def test_proxy_http():
@@ -11,11 +12,13 @@ def test_proxy_http():
     
     # Proxy configuration
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Test with HTTP first
     test_url_http = "http://httpbin.org/ip"

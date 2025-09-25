@@ -4,6 +4,7 @@ Test script to diagnose proxy connection issues
 """
 
 import requests
+import os
 import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -13,11 +14,13 @@ def test_proxy_basic():
     print("🔍 Testing basic proxy connection...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Test URLs
     test_urls = [
@@ -79,11 +82,13 @@ def test_proxy_with_session():
     print("\n🔍 Testing proxy with session...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Create session with retry strategy
     session = requests.Session()
@@ -145,11 +150,13 @@ def test_proxy_curl_equivalent():
     import subprocess
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Test different curl commands
     curl_commands = [

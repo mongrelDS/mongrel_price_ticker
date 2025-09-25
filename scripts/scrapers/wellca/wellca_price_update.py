@@ -23,24 +23,24 @@ Date: 2024
 """
 
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-import io
 from datetime import date, datetime
-import concurrent.futures # Import the library
 import sys
 import os
 import logging
 from dotenv import load_dotenv
-from playwright.sync_api import sync_playwright, Browser, Page
 import asyncio
 from playwright.async_api import async_playwright, Browser as AsyncBrowser, Page as AsyncPage
+import gc
 
-# Load environment variables
-load_dotenv()
+# Establish project root and configure environment/import paths to work from any CWD
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
+# Load environment variables from project root .env
+env_path = os.path.join(PROJECT_ROOT, '.env')
+load_dotenv(dotenv_path=env_path)
 
 # Add the src directory to the path so we can import our modules
-src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
+src_path = os.path.join(PROJECT_ROOT, 'src')
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
@@ -62,133 +62,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_product_info_playwright(url):
-    """
-    Scrapes a URL using Playwright for its title, brand, breadcrumbs, price, availability status, image URL, and size.
-    Returns a tuple (title, brand, breadcrumbs, price, tag, image_url, size).
-    On complete failure (e.g., 404), the tag will be 'Failed'.
-    """
-    try:
-        with sync_playwright() as p:
-            # Launch browser with proxy configuration
-            proxy_config = get_proxy_for_requests()
-            browser_options = {
-                'headless': True,
-                'timeout': 60000  # 60 seconds timeout
-            }
-            
-            # Add proxy configuration if available
-            if proxy_config and 'http' in proxy_config:
-                proxy_url = proxy_config['http']
-                browser_options['proxy'] = {'server': proxy_url}
-            
-            browser = p.chromium.launch(**browser_options)
-            page = browser.new_page()
-            
-            # Set user agent
-            page.set_extra_http_headers({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            })
-            
-            # Navigate to the page
-            response = page.goto(url, timeout=60000)
-            
-            if response and response.status >= 400:
-                logger.warning(f"HTTP error {response.status} for {url}")
-                browser.close()
-                record_proxy_usage(success=False)
-                return None, None, None, pd.NA, 'Failed', None, None
-            
-            # Record successful proxy usage
-            record_proxy_usage(success=True)
-            
-        # Wait for the page to load completely
-        page.wait_for_load_state('networkidle', timeout=15000)
-
-        # --- Initialize variables to default values ---
-        title = None
-        brand = None
-        breadcrumbs = None
-        price = pd.NA
-        tag = ''
-        image_url = None
-        size = None
-
-        # -- Scrape Title --
-        try:
-            title_element = page.query_selector('h1.product-info__title')
-            if title_element:
-                title = title_element.text_content().strip()
-        except Exception as e:
-            logger.debug(f"Error scraping title for {url}: {e}")
-
-        # -- Scrape Brand --
-        try:
-            brand_element = page.query_selector('a.product-info__brand')
-            if brand_element:
-                brand = brand_element.text_content().strip()
-        except Exception as e:
-            logger.debug(f"Error scraping brand for {url}: {e}")
-
-        # -- Scrape Size --
-        try:
-            size_element = page.query_selector('h5.product-info__subtitle span:nth-of-type(2)')
-            if size_element:
-                size = size_element.text_content().strip()
-        except Exception as e:
-            logger.debug(f"Error scraping size for {url}: {e}")
-
-        # -- Scrape Breadcrumbs --
-        try:
-            breadcrumb_elements = page.query_selector_all('div.bread_crumb_container span[itemprop="name"]')
-            if breadcrumb_elements:
-                breadcrumb_list = [elem.text_content().strip() for elem in breadcrumb_elements]
-                breadcrumbs = " > ".join(breadcrumb_list)
-        except Exception as e:
-            logger.debug(f"Error scraping breadcrumbs for {url}: {e}")
-
-        # -- Determine Availability Tag --
-        try:
-            if page.query_selector('div.product-info__unavailable--discontinued'):
-                tag = 'Discontinued'
-            elif page.query_selector('input#add_to_cart_button'):
-                tag = 'Add to Cart'
-        except Exception as e:
-            logger.debug(f"Error determining availability for {url}: {e}")
-
-        # -- Determine Price --
-        try:
-            price_element = page.query_selector('span[itemprop="price"]')
-            if price_element:
-                price_text = price_element.text_content().strip().replace('$', '')
-                price = float(price_text)
-        except Exception as e:
-            logger.debug(f"Error scraping price for {url}: {e}")
-
-        # -- Scrape Image URL --
-        try:
-            image_element = page.query_selector('#main-product-image')
-            if image_element:
-                image_url = image_element.get_attribute('src')
-        except Exception as e:
-            logger.debug(f"Error scraping image URL for {url}: {e}")
-
-        browser.close()
-        
-        # Return all scraped data, including the new size
-        return title, brand, breadcrumbs, price, tag, image_url, size
-
-    except Exception as e:
-        # Handle any errors during scraping
-        logger.error(f"An error occurred for {url}: {e}")
-        
-        # Record failed proxy usage and switch credentials if needed
-        record_proxy_usage(success=False)
-        
-        # Return Nones for all fields and 'Failed' tag
-        return None, None, None, pd.NA, 'Failed', None, None
-
-
 async def get_product_info_async(url, browser: AsyncBrowser):
     """
     Async version of the Playwright scraper for better parallel processing.
@@ -199,7 +72,7 @@ async def get_product_info_async(url, browser: AsyncBrowser):
         
         # Set user agent
         await page.set_extra_http_headers({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0'
         })
         
         # Navigate to the page
@@ -321,7 +194,7 @@ async def scrape_urls_async(urls):
         browser_options['proxy'] = {'server': proxy_url}
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(**browser_options)
+        browser = await p.firefox.launch(**browser_options)
         
         try:
             # Create tasks for all URLs
@@ -345,12 +218,46 @@ async def scrape_urls_async(urls):
             await browser.close()
 
 
-def get_product_info(url):
+async def scrape_urls_batched_async(urls, batch_size: int = 50, max_concurrency: int = 8):
     """
-    Wrapper function that calls the Playwright-based scraper.
-    Maintains compatibility with existing code.
+    Async scraping with a single shared browser and bounded concurrency.
+    Processes URLs in batches to control memory usage.
     """
-    return get_product_info_playwright(url)
+    proxy_config = get_proxy_for_requests()
+    browser_options = {
+        'headless': True,
+        'timeout': 60000
+    }
+
+    if proxy_config and 'http' in proxy_config:
+        proxy_url = proxy_config['http']
+        browser_options['proxy'] = {'server': proxy_url}
+
+    async with async_playwright() as p:
+        browser = await p.firefox.launch(**browser_options)
+        try:
+            semaphore = asyncio.Semaphore(max_concurrency)
+
+            async def bound_fetch(url: str):
+                async with semaphore:
+                    try:
+                        return await get_product_info_async(url, browser)
+                    except Exception as e:
+                        logger.error(f"Exception during fetch for {url}: {e}")
+                        return (None, None, None, pd.NA, 'Failed', None, None)
+
+            all_results = []
+            for i in range(0, len(urls), batch_size):
+                batch = urls[i:i+batch_size]
+                tasks = [asyncio.create_task(bound_fetch(u)) for u in batch]
+                results = await asyncio.gather(*tasks, return_exceptions=False)
+                all_results.extend(results)
+
+                # Encourage GC between batches
+                await asyncio.sleep(0)
+            return all_results
+        finally:
+            await browser.close()
 
 
 def main():
@@ -366,8 +273,8 @@ def main():
     from sqlalchemy import create_engine
     from sqlalchemy.pool import NullPool
 
-    # Import analytics function with correct path
-    analytics_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'analytics'))
+    # Import analytics function with absolute path (works from any CWD)
+    analytics_path = os.path.join(PROJECT_ROOT, 'scripts', 'analytics')
     if analytics_path not in sys.path:
         sys.path.insert(0, analytics_path)
     from df_price_30d import get_price_30d
@@ -428,6 +335,19 @@ def main():
     # Product Links
     try:
         df_link = read_mysql_to_df(engine=db_engine, table_name='product_links')
+        # Normalize to expected column name
+        if 'product_url' not in df_link.columns:
+            if 'link' in df_link.columns:
+                df_link = df_link.rename(columns={'link': 'product_url'})
+            elif 'url' in df_link.columns:
+                df_link = df_link.rename(columns={'url': 'product_url'})
+            else:
+                logger.warning("product_links table missing 'product_url' column; creating empty frame")
+                df_link = pd.DataFrame(columns=['product_url'])
+        
+        # keep rows where product_url starts with https://well.ca
+        df_link = df_link[df_link['product_url'].str.startswith('https://well.ca')]
+        
         if len(df_link) > 0:
             df_link = df_link.sample(min(len(df_link), n_20_minutes))
             logger.info(f"Selected {len(df_link)} product links from database")
@@ -440,31 +360,30 @@ def main():
 
     try:
         df_wellca = get_price_30d(domain='well.ca')
-        #rename link to product_url
-        df_wellca = df_wellca.rename(columns={'link': 'product_url'})
-
-        # select all rows where price_30d_avg is null
-        # df_wellca = df_wellca[df_wellca['price_30d_avg'].isnull()]
-        # drop rows where [tag] is 'Failed'
+        # Only keep columns we need immediately and rename
+        df_wellca = df_wellca[['link', 'tag', 'date']].rename(columns={'link': 'product_url'})
+        # drop rows where [tag] is 'Failed' and sort by date desc
         df_wellca = df_wellca[df_wellca['tag'] != 'Failed']
-        # sort date
+        # keep rows where product_url starts with https://well.ca
+        df_wellca = df_wellca[df_wellca['product_url'].str.startswith('https://well.ca')]
         df_wellca = df_wellca.sort_values(by='date', ascending=False)
-        
-        # Combine dataframes
-        if len(df_wellca) > 0:
-            df_link = pd.concat([df_link, df_wellca], ignore_index=True)
-            logger.info(f"Added {len(df_wellca)} well.ca records with missing price data")
+
+        # Determine how many additional URLs we need to reach n_20_minutes
+        needed = max(0, n_20_minutes - len(df_link))
+        if needed > 0 and len(df_wellca) > 0:
+            df_wellca = df_wellca[['product_url']].head(needed)
+            df_link = pd.concat([df_link[['product_url']], df_wellca], ignore_index=True)
+            logger.info(f"Added up to {len(df_wellca)} well.ca records to fill target count")
         else:
-            logger.warning("No well.ca data found with missing price_30d_avg")
+            logger.info("No additional well.ca records needed from history")
     except Exception as e:
         logger.error(f"Error reading well.ca data: {e}")
 
     # Clean and deduplicate
-    df_link = df_link.drop_duplicates(subset='product_url', keep='first')
+    df_link.drop_duplicates(subset='product_url', keep='first', inplace=True)
     df_link = df_link[['product_url']]
-
-    # get the tail n_20_minutes rows
-    df_link = df_link.tail(n_20_minutes)
+    if len(df_link) > n_20_minutes:
+        df_link = df_link.tail(n_20_minutes)
 
     logger.info(f"Processing {len(df_link)} product URLs")
 
@@ -477,16 +396,21 @@ def main():
 
     # Use async Playwright for better performance and JavaScript handling
     try:
-        logger.info("Using async Playwright for parallel scraping...")
-        results = asyncio.run(scrape_urls_async(urls_to_scrape))
+        max_concurrency = int(os.getenv('SCRAPE_MAX_CONCURRENCY', '8'))
+        batch_size = int(os.getenv('SCRAPE_BATCH_SIZE', '50'))
+        logger.info(f"Using async Playwright (Firefox) for parallel scraping (max_concurrency={max_concurrency}, batch_size={batch_size})...")
+        results = asyncio.run(scrape_urls_batched_async(urls_to_scrape, batch_size=batch_size, max_concurrency=max_concurrency))
     except Exception as e:
-        logger.warning(f"Async scraping failed, falling back to sync method: {e}")
-        # Fallback to sync method if async fails
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(get_product_info, urls_to_scrape))
+        logger.error(f"Async scraping failed: {e}")
+        raise
 
     # Create a new DataFrame from the results
     results_df = pd.DataFrame(results, columns=['title', 'brand', 'breadcrumbs', 'price', 'tag', 'image_url', 'size'])
+    # Optimize dtypes to reduce memory
+    if 'price' in results_df.columns:
+        results_df['price'] = pd.to_numeric(results_df['price'], errors='coerce').astype('float32')
+    if 'tag' in results_df.columns:
+        results_df['tag'] = results_df['tag'].astype('category')
 
     # Reset the index of df_link before assignment to ensure alignment
     df_link = df_link.reset_index(drop=True)
@@ -509,6 +433,9 @@ def main():
     df_link['date'] = date.today()
 
     logger.info("Scraping and updating complete.")
+    # Free intermediates
+    del results_df
+    gc.collect()
     logger.info("-" * 50)
     
     # Log proxy usage statistics
@@ -535,7 +462,7 @@ def main():
     df_link['domain'] = 'well.ca'
 
     # Drop unnecessary columns
-    df_link = df_link.drop(['breadcrumbs', 'image_url', 'size', 'product_url'], axis=1)
+    df_link.drop(['breadcrumbs', 'image_url', 'size', 'product_url'], axis=1, inplace=True)
 
     # Display the final results
     logger.info("\nFinal results:")

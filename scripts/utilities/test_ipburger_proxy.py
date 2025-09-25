@@ -4,6 +4,7 @@ Test IPBurger proxy configuration
 """
 
 import requests
+import os
 import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -14,11 +15,13 @@ def test_ipburger_proxy():
     
     # IPBurger proxy configuration
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507-sessid-PshE-sesstime-30',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     print(f"🌐 IPBurger Proxy: {proxy_config['host']}:{proxy_config['port']}")
     print(f"👤 Username: {proxy_config['username']}")
@@ -102,11 +105,13 @@ def test_ipburger_with_session():
     print("\n🔍 Testing IPBurger with session...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507-sessid-PshE-sesstime-30',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Create session with retry strategy
     session = requests.Session()

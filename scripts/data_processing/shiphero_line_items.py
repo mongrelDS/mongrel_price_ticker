@@ -9,11 +9,10 @@ from playwright.async_api import async_playwright, expect
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 
-# Add src directory to path and import centralized functions
-sys.path.append('/home/mongreldatalab/mongrel_price_ticker/src')
-from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
-from generate_key import generate_key
-from cleanup_column_names import clean_column_names
+# Use absolute imports from the project package
+from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from src.generate_key import generate_key
+from src.cleanup_column_names import clean_column_names
 
 # --- Functions now imported from src directory ---
 
@@ -29,6 +28,7 @@ def get_date_strings():
 # --- Main Scraping and Database Logic ---
 async def main(db_engine):
     all_line_items = []
+    timestamp_0 = datetime.now()
     start_date, end_date = get_date_strings()
 
     async with async_playwright() as p:
@@ -40,8 +40,10 @@ async def main(db_engine):
         await page.goto("https://app.shiphero.com/account/login")
         
         # Get credentials from environment variables
-        shiphero_email = os.getenv('SHIPHERO_EMAIL', 'shipheronatura@gmail.com')
-        shiphero_password = os.getenv('SHIPHERO_PASSWORD', 'WQG4SjHzeq9e65a')
+        shiphero_email = os.getenv('SHIPHERO_EMAIL')
+        shiphero_password = os.getenv('SHIPHERO_PASSWORD')
+        if not shiphero_email or not shiphero_password:
+            raise ValueError("Missing SHIPHERO_EMAIL or SHIPHERO_PASSWORD environment variables")
         
         await page.locator('[name="username"]').fill(shiphero_email)
         await page.get_by_role("button", name="Continue").click()
@@ -122,16 +124,37 @@ async def main(db_engine):
     else:
         print("\nNo data was scraped.")
 
+    # --- Duration tracking and upsert ---
+    try:
+        timestamp_1 = datetime.now()
+        duration = timestamp_1 - timestamp_0
+        duration_in_minutes = duration.total_seconds() / 60
+
+        results_count = len(all_line_items)
+        df_duration = pd.DataFrame({
+            'duration_min': [duration_in_minutes],
+            'date': [datetime.now()],
+            'results': [results_count],
+            'result_per_minute': [results_count / duration_in_minutes if duration_in_minutes > 0 else 0.0],
+            'domain': ['shiphero'],
+            'type': ['line_items']
+        })
+
+        upsert_df_to_mysql(df=df_duration, engine=db_engine, target_table='duration', key_col='date')
+        print("Successfully upserted duration data to 'duration' table")
+    except Exception as e:
+        print(f"Failed to upsert duration data: {e}")
+
 # --- Script Execution ---
 if __name__ == "__main__":
     # Database Credentials & Connection (using environment variables)
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
     db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
-    db_password = os.getenv('DB_PASSWORD', 'defaultpassword')
+    db_password = os.getenv('DB_PASSWORD')
 
     if not db_password:
-        raise ValueError("Database password is not set. Please configure it.")
+        raise ValueError("DB_PASSWORD environment variable is required (no default in repo)")
 
     # Create the SQLAlchemy Engine
     connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"

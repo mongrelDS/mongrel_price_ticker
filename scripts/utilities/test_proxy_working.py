@@ -4,6 +4,7 @@ Working proxy test using HTTPS tunneling
 """
 
 import requests
+import os
 import time
 
 def test_proxy_https():
@@ -11,11 +12,13 @@ def test_proxy_https():
     print("🔍 Testing proxy with HTTPS requests...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Use HTTPS proxy for both HTTP and HTTPS requests
     proxy_url = f"http://{proxy_config['username']}:{proxy_config['password']}@{proxy_config['host']}:{proxy_config['port']}"
@@ -61,11 +64,13 @@ def test_proxy_with_session():
     print("\n🔍 Testing proxy with session...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Create session
     session = requests.Session()

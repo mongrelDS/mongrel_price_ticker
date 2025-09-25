@@ -1,6 +1,17 @@
 # Ignore credentials
 credentials/
 
+# Environment files
+.env
+.env.*
+*.env
+
+# Auth tokens and pickles
+token.pickle
+*.pickle
+credentials.json
+client_secrets.json
+
 # Ignore python cache
 __pycache__/
 *.pyc
@@ -12,9 +23,13 @@ venv/
 venv_new/
 venv_scraper/
 test_env/
+.venv/
+**/.venv/
 
 # Ignore log files
 *.log
+logs/
+scripts/logs/
 
 # Ignore data files
 *.csv

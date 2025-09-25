@@ -4,6 +4,7 @@ Test different proxy ports and configurations
 """
 
 import requests
+import os
 import time
 
 def test_different_ports():
@@ -11,10 +12,12 @@ def test_different_ports():
     print("🔍 Testing different proxy ports...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     # Common proxy ports
     ports = [7777, 8080, 3128, 1080, 80, 443]
@@ -50,11 +53,13 @@ def test_different_auth_methods():
     print("\n🔍 Testing different auth methods...")
     
     proxy_config = {
-        'host': 'residential.ipb.cloud',
-        'port': '7777',
-        'username': 'customer-mnft29185901-asn-10507',
-        'password': 'xyspgptxmm_J9v'
+        'host': os.getenv('PROXY_HOST', 'residential.ipb.cloud'),
+        'port': os.getenv('PROXY_PORT', '7777'),
+        'username': os.getenv('PROXY_USERNAME'),
+        'password': os.getenv('PROXY_PASSWORD')
     }
+    if not proxy_config['username'] or not proxy_config['password']:
+        raise ValueError("Set PROXY_USERNAME and PROXY_PASSWORD in environment (no secrets in repo)")
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
