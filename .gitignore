@@ -1,60 +1,29 @@
-# Python
+# Ignore credentials
+credentials/
+
+# Ignore python cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
+*.pyo
+*.pyd
 
-# Virtual environments
+# Ignore virtual environments
 venv/
-env/
-ENV/
+venv_new/
+venv_scraper/
+test_env/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Data files
-data/*.csv
-data/*.xlsx
-data/*.json
-!data/.gitkeep
-
-# Logs
+# Ignore log files
 *.log
-logs/
 
-# Environment variables
-.env
-.env.local
+# Ignore data files
+*.csv
+*.json
+data/
 
-# OS
+# Ignore configuration files that may contain secrets
+config/
+
+# Ignore OS-specific files
 .DS_Store
 Thumbs.db
-PASSWORD_ROTATION_PLAN.md
-
-# Security and sensitive documentation
-PASSWORD_ROTATION_PLAN.md
-SECURITY_AUDIT_REPORT.md
-SECURITY_FIXES_SUMMARY.md
-SECURITY_PROCEDURES.md
-NEXT_STEPS_SECURITY.md
-NEXT_STEPS_COMPLETE.md
-SECURITY_AUDIT_REPORT.md
