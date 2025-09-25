@@ -1,0 +1,32 @@
+
+# Managed Cron Schedule (env-hardened)
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PYTHONPATH=/home/mongreldatalab/mongrel_price_ticker
+
+# ShipHero Data Pipeline
+0 1 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/data_processing/shiphero_line_items.py >> logs/cron_jobs/shiphero_line_items.log 2>&1
+30 1 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/data_processing/sh_to_sql_order_line_items.py >> logs/cron_jobs/order_line_items.log 2>&1
+0 2 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/data_processing/sh_to_sql_shipped_orders.py >> logs/cron_jobs/shipped_orders.log 2>&1
+30 2 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/data_processing/sh_to_sql_product_table.py >> logs/cron_jobs/product_table.log 2>&1
+0 3 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/data_processing/natura_customer_profile.py >> logs/cron_jobs/natura_customer.log 2>&1
+30 3 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/data_processing/archive_old_csv_files.py >> logs/cron_jobs/archive_files.log 2>&1
+
+# Customer Cohorts
+0 4 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/analytics/customer_cohort_chart.py >> logs/cron_jobs/customer_cohort_chart.log 2>&1
+30 4 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/analytics/frozen_customer_cohort_chart.py >> logs/cron_jobs/frozen_customer_cohort_chart.log 2>&1
+
+# Healthy Planet
+0 5 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/healthyplanet/healthyplanet_json_method.py >> logs/cron_jobs/healthyplanet_json_method.log 2>&1
+
+# Well.ca Scraping
+30 5 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/wellca/wellca_json_method_from_search.py >> logs/cron_jobs/wellca_json_method_from_search.log 2>&1
+
+# GoodnessMe Scraping
+0 6 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/goodnessme/goodness_me_initial_crawl.py >> logs/cron_jobs/goodness_me_initial_crawl.log 2>&1
+30 6 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/goodnessme/goodness_me_item_json_crawl.py >> logs/cron_jobs/goodness_me_item_json_crawl.log 2>&1
+
+# Nature Sante Scraping
+0 7 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/naturesante/naturesante_crawl.py >> logs/cron_jobs/naturesante_crawl.log 2>&1
+30 7 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/naturesante/naturesante_crawl_results.py >> logs/cron_jobs/naturesante_crawl_results.log 2>&1
+0 8 * * 0,1,2,3,4,5 cd /home/mongreldatalab/mongrel_price_ticker && /usr/bin/python3 scripts/scrapers/naturesante/naturesante_json_results.py >> logs/cron_jobs/naturesante_json_results.log 2>&1

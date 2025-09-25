@@ -35,34 +35,34 @@
 # 11. New vs returning analysis (5:30 AM - S M T W T F)
 30 5 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/data_processing/new_vs_returning.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/new_vs_returning.log 2>&1
 
-# 12. Healthy Planet JSON method (6:00 AM - S M T W T F)
-0 6 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/healthyplanet/healthyplanet_json_method.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/healthyplanet_json_method.log 2>&1
+# 12. SQL maintenance (6:00 AM - S M T W T F)
+0 6 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/sql_maintenance.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/sql_maintenance.log 2>&1
 
-# 13. Well.ca JSON method from search (6:30 AM - S M T W T F)
-30 6 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/wellca/wellca_json_method_from_search.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/wellca_json_method_from_search.log 2>&1
+# 13. Healthy Planet JSON method (6:30 AM - S M T W T F)
+30 6 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/healthyplanet/healthyplanet_json_method.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/healthyplanet_json_method.log 2>&1
 
-# 14. Goodness Me initial crawl (7:00 AM - S M T W T F)
-0 7 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/goodnessme/goodness_me_initial_crawl.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/goodness_me_initial_crawl.log 2>&1
+# 14. Well.ca JSON method from search (7:00 AM - S M T W T F)
+0 7 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/wellca/wellca_json_method_from_search.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/wellca_json_method_from_search.log 2>&1
 
-# 15. Goodness Me item JSON crawl (7:30 AM - S M T W T F)
-30 7 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/goodnessme/goodness_me_item_json_crawl.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/goodness_me_item_json_crawl.log 2>&1
+# 15. Goodness Me initial crawl (7:30 AM - S M T W T F)
+30 7 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/goodnessme/goodness_me_initial_crawl.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/goodness_me_initial_crawl.log 2>&1
 
-# 16. Naturesante crawl (8:00 AM - S M T W T F)
-0 8 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/naturesante/naturesante_crawl.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/naturesante_crawl.log 2>&1
+# 16. Goodness Me item JSON crawl (8:00 AM - S M T W T F)
+0 8 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/goodnessme/goodness_me_item_json_crawl.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/goodness_me_item_json_crawl.log 2>&1
 
-# 17. Naturesante crawl results (8:30 AM - S M T W T F)
-30 8 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/naturesante/naturesante_crawl_results.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/naturesante_crawl_results.log 2>&1
+# 17. Naturesante crawl (8:30 AM - S M T W T F)
+30 8 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/naturesante/naturesante_crawl.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/naturesante_crawl.log 2>&1
 
-# 18. Naturesante JSON results (9:00 AM - S M T W T F)
-0 9 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/naturesante/naturesante_json_results.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/naturesante_json_results.log 2>&1
+# 18. Naturesante crawl results (9:00 AM - S M T W T F)
+0 9 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/naturesante/naturesante_crawl_results.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/naturesante_crawl_results.log 2>&1
 
-# 19. SQL maintenance (9:30 AM - S M T W T F)
-30 9 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/sql_maintenance.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/sql_maintenance.log 2>&1
+# 19. Naturesante JSON results (8:00 AM - S M T W T F) - NOTE: This conflicts with item 16, using 9:30 AM instead
+30 9 * * 0,1,2,3,4,5 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/naturesante/naturesante_json_results.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/naturesante_json_results.log 2>&1
 
 # Cleanup success files daily at 10:00 AM
 0 10 * * 0,1,2,3,4,5 rm -f /tmp/shiphero_line_items.success /tmp/sh_to_sql_order_line_items.success /tmp/shipped_orders.success /tmp/product_table.success /tmp/natura_customer.success
 
-# Well.ca Scraping Pipeline
+# Well.ca Scraping Pipeline (unchanged)
 # Brand discovery (weekly - Sunday 2 AM)
 0 2 * * 0 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/wellca/wellca_brand_link_list.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/wellca_brand_links.log 2>&1
 
@@ -72,7 +72,7 @@
 # Price updates (daily - 4 AM)
 0 4 * * * /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/wellca/wellca_price_update.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/wellca_price_update.log 2>&1
 
-# Healthy Planet Scraping Pipeline
+# Healthy Planet Scraping Pipeline (unchanged)
 # Weekly crawler (Sunday 1:00 AM) - discovers new products
 0 1 * * 0 /usr/bin/python3 /home/mongreldatalab/mongrel_price_ticker/scripts/scrapers/healthyplanet/healthyplanet_crawler.py >> /home/mongreldatalab/mongrel_price_ticker/logs/cron_jobs/healthyplanet_crawler.log 2>&1
 
