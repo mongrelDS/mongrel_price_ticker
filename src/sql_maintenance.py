@@ -16,6 +16,8 @@ import logging
 import sys
 from typing import List, Dict, Any
 from contextlib import contextmanager
+from sqlalchemy import text
+from src.database_config import get_database_engine
 
 
 # Configure logging
@@ -30,41 +32,26 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class DatabaseConfig:
-    """Database configuration class"""
-    def __init__(self, host: str = 'localhost', user: str = 'root', 
-                 password: str = '', database: str = 'mongrel_price_ticker'):
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
-
-
 class SQLMaintenance:
     """Main class for SQL maintenance operations"""
     
-    def __init__(self, config: DatabaseConfig):
-        self.config = config
+    def __init__(self, engine):
+        """Initialize with a database engine."""
+        self.engine = engine
         self.connection = None
     
     @contextmanager
     def get_connection(self):
         """Context manager for database connections"""
         try:
-            self.connection = mysql.connector.connect(
-                host=self.config.host,
-                user=self.config.user,
-                password=self.config.password,
-                database=self.config.database,
-                autocommit=False
-            )
+            self.connection = self.engine.connect()
             logger.info("Successfully connected to database")
             yield self.connection
-        except mysql.connector.Error as e:
+        except Exception as e:
             logger.error(f"Database connection error: {e}")
             raise
         finally:
-            if self.connection and self.connection.is_connected():
+            if self.connection:
                 self.connection.close()
                 logger.info("Database connection closed")
     
@@ -92,13 +79,12 @@ class SQLMaintenance:
         results = {}
         
         with self.get_connection() as conn:
-            cursor = conn.cursor()
             
             for query_info in maintenance_queries:
                 try:
                     logger.info(f"Executing: {query_info['description']}")
-                    cursor.execute(query_info['query'])
-                    affected_rows = cursor.rowcount
+                    result = conn.execute(text(query_info['query']))
+                    affected_rows = result.rowcount
                     
                     results[query_info['name']] = {
                         'success': True,
@@ -108,7 +94,7 @@ class SQLMaintenance:
                     
                     logger.info(f"✓ {query_info['name']}: {affected_rows} rows affected")
                     
-                except mysql.connector.Error as e:
+                except Exception as e:
                     error_msg = f"Error executing {query_info['name']}: {e}"
                     logger.error(error_msg)
                     
@@ -122,12 +108,10 @@ class SQLMaintenance:
             try:
                 conn.commit()
                 logger.info("All changes committed successfully")
-            except mysql.connector.Error as e:
+            except Exception as e:
                 conn.rollback()
                 logger.error(f"Error committing changes: {e}")
                 raise
-            
-            cursor.close()
         
         return results
     
@@ -144,18 +128,14 @@ class SQLMaintenance:
         stats = {}
         
         with self.get_connection() as conn:
-            cursor = conn.cursor()
             
             for stat_name, query in stats_queries.items():
                 try:
-                    cursor.execute(query)
-                    result = cursor.fetchone()
-                    stats[stat_name] = result[0] if result else 0
-                except mysql.connector.Error as e:
+                    result = conn.execute(text(query)).scalar_one_or_none()
+                    stats[stat_name] = result if result is not None else 0
+                except Exception as e:
                     logger.error(f"Error getting {stat_name}: {e}")
                     stats[stat_name] = 0
-            
-            cursor.close()
         
         return stats
     
@@ -211,17 +191,11 @@ class SQLMaintenance:
 def main():
     """Main function"""
     try:
-        # Initialize database configuration
-        # TODO: Consider loading from environment variables or config file
-        config = DatabaseConfig(
-            host='localhost',
-            user='root',
-            password='',  # Consider using environment variables for security
-            database='mongrel_price_ticker'
-        )
+        # Initialize database engine from central configuration
+        engine = get_database_engine()
         
         # Create maintenance instance and run
-        maintenance = SQLMaintenance(config)
+        maintenance = SQLMaintenance(engine)
         success = maintenance.run_maintenance()
         
         if success:

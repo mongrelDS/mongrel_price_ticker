@@ -6,7 +6,7 @@ import math # Added for ceiling division
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import NullPool
 import json
-from database_config import get_database_engine, get_database_credentials
+from src.database_config import get_database_engine, get_database_credentials
 
 # --- MODIFIED FUNCTION ---
 def upsert_df_to_mysql(
@@ -16,7 +16,10 @@ def upsert_df_to_mysql(
     key_col: str,
     custom_dtypes: dict = None,
     max_retries: int = 3,
-    chunksize: int = 5000  # New parameter to control batch size
+    chunksize: int = 5000,  # New parameter to control batch size
+    in_place: bool = False,  # Avoid making a full DataFrame copy when True
+    to_sql_method: str = 'multi',  # Use pandas multi-row insert batching
+    to_sql_chunksize: int | None = None  # Per-insert chunking for to_sql
 ):
     """
     Upserts a pandas DataFrame into a MySQL table using batch processing
@@ -30,13 +33,16 @@ def upsert_df_to_mysql(
         custom_dtypes (dict, optional): Map column names to specific SQLAlchemy types.
         max_retries (int, optional): The maximum number of times to retry on a connection error.
         chunksize (int, optional): The number of rows in each batch to be processed.
+        in_place (bool, optional): If True, avoid making a full DataFrame copy before processing.
+        to_sql_method (str, optional): pandas to_sql insert method. Default 'multi' batches INSERTs.
+        to_sql_chunksize (int | None, optional): Per-insert chunksize passed to pandas to_sql.
     """
     if df.empty:
         print("Input DataFrame is empty. Nothing to do.")
         return
 
     # Process columns with list data into JSON strings first
-    df_processed = df.copy()
+    df_processed = df if in_place else df.copy()
     for col in ['tags', 'overlay_badges']:
         if col in df_processed.columns:
             df_processed[col] = df_processed[col].apply(
@@ -99,7 +105,14 @@ def upsert_df_to_mysql(
                     print(f"  -> Processing batch {i + 1}/{num_chunks} ({len(batch_df)} rows)...")
 
                     # Upload current batch to the temporary table (overwriting it each time)
-                    batch_df.to_sql(temp_table, conn, if_exists='replace', index=False)
+                    batch_df.to_sql(
+                        temp_table,
+                        conn,
+                        if_exists='replace',
+                        index=False,
+                        method=to_sql_method,
+                        chunksize=to_sql_chunksize
+                    )
 
                     # Perform the UPSERT from the temp table to the target table
                     conn.execute(upsert_query)
@@ -134,10 +147,22 @@ def read_mysql_to_df(engine, table_name: str, max_retries: int = 3) -> pd.DataFr
         try:
             print(f"--- Attempting to read table '{table_name}' ---")
             df = pd.read_sql_table(table_name, engine)
-            # Convert JSON strings back to lists after reading
+            # Convert JSON-like columns safely back to Python lists
+            def _safe_json_loads(value):
+                if not isinstance(value, str):
+                    return value
+                s = value.strip()
+                if s == "" or s.lower() == "null":
+                    return None
+                try:
+                    return json.loads(s)
+                except Exception:
+                    # Leave as original string if not valid JSON
+                    return value
+
             for col in ['tags', 'overlay_badges']:
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                    df[col] = df[col].apply(_safe_json_loads)
             print("Read successful!")
             return df
         except OperationalError as e:

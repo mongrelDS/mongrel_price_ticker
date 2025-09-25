@@ -9,6 +9,7 @@ import time
 import random
 import uuid
 import hashlib
+import json
 from typing import Dict, Optional, Union, List
 from dotenv import load_dotenv
 
@@ -36,30 +37,41 @@ class ProxyConfig:
     
     def __init__(self):
         """Initialize proxy configuration with multiple credentials"""
-        self.host = "residential.ipb.cloud"
-        self.port = 7777
+        self.host = os.getenv('PROXY_HOST', "residential.ipb.cloud")
+        self.port = int(os.getenv('PROXY_PORT', 7777))
         
-        # Define multiple proxy credentials
-        self.credentials = [
-            ProxyCredentials(
-                username="customer-oxyl29185902-cc-US-sessid-OMCN-sesstime-30",
-                password="ykdszwucoa_O5o",
-                city="US"
-            ),
-            ProxyCredentials(
-                username="customer-mnft29185901-cc-CA-sessid-nybl-sesstime-30",
-                password="xyspgptxmm_J9v",
-                city="CA"
-            )
-        ]
+        # Load proxy credentials from environment variable
+        self.credentials = self._load_credentials_from_env()
         
+        if not self.credentials:
+            raise ValueError("No proxy credentials configured. Please set the PROXY_CREDENTIALS environment variable.")
+
         self.current_credential_index = 0
-        self.switch_threshold = 5  # Switch after 5 uses
-        self.switch_on_error = True  # Switch immediately on error
+        self.switch_threshold = int(os.getenv('PROXY_SWITCH_THRESHOLD', 5))  # Switch after 5 uses
+        self.switch_on_error = os.getenv('PROXY_SWITCH_ON_ERROR', 'true').lower() == 'true'  # Switch immediately on error
         
-        # Override with environment variables if available
-        self.host = os.getenv('PROXY_HOST', self.host)
-        self.port = int(os.getenv('PROXY_PORT', self.port))
+    def _load_credentials_from_env(self) -> List[ProxyCredentials]:
+        """Load proxy credentials from the PROXY_CREDENTIALS environment variable."""
+        creds_json = os.getenv('PROXY_CREDENTIALS')
+        if not creds_json:
+            return []
+        
+        try:
+            creds_list = json.loads(creds_json)
+            if not isinstance(creds_list, list):
+                raise ValueError("PROXY_CREDENTIALS should be a JSON list of objects.")
+            
+            return [
+                ProxyCredentials(
+                    username=cred.get('username'),
+                    password=cred.get('password'),
+                    city=cred.get('city', '')
+                )
+                for cred in creds_list
+                if cred.get('username') and cred.get('password')
+            ]
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON format in PROXY_CREDENTIALS environment variable.")
     
     def get_current_credential(self) -> ProxyCredentials:
         """Get the current active credential"""
