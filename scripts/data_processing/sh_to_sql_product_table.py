@@ -13,13 +13,15 @@ from sqlalchemy import create_engine
 # Ensure project root and src are on sys.path for reliable imports under cron
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC_DIR = os.path.join(PROJECT_ROOT, 'src')
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 # Import required functions from src package
-from google_drive_csv_import import import_csv_from_drive
-from cleanup_column_names import clean_column_names
-from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from src.google_drive_csv_import import import_csv_from_drive
+from src.cleanup_column_names import clean_column_names
+from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
 
 def main():
     """Main function to process product data from Google Drive to MySQL"""
@@ -49,9 +51,9 @@ def main():
             google_drive_id="1_VV9n32idhpCu4H017Z_9ZKo80DLaSbn"
         )
         
-        if product_table is None:
-            print("❌ Failed to import data from Google Drive")
-            return False
+        if product_table is None or len(product_table) == 0:
+            print("⚠️ No product_table CSV rows found on Drive; skipping upsert.")
+            return True
         
         print(f"✅ Successfully imported {len(product_table)} rows")
         

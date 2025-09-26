@@ -27,14 +27,14 @@ def process_shipped_orders(shipped_orders):
     shipped_orders = clean_column_names(shipped_orders)
     print("✅ Column names cleaned")
     
-    # Fix specific column name mismatch for database compatibility
-    # Some exports include a single underscore before 'in'; DB uses double underscore
-    if 'size_length_x_width_x_height_in' in shipped_orders.columns and 'size_length_x_width_x_height__in' not in shipped_orders.columns:
+    # Normalize column names for DB compatibility
+    # Single underscore variant -> double underscore variant used by DB
+    if 'size_length_x_width_x_height_in' in shipped_orders.columns:
         shipped_orders = shipped_orders.rename(
             columns={'size_length_x_width_x_height_in': 'size_length_x_width_x_height__in'}
         )
-        print("✅ Fixed column name mismatch for size_length_x_width_x_height__in")
-    # Ensure the column exists even if not provided to avoid SQL errors
+        print("✅ Normalized column name to 'size_length_x_width_x_height__in'")
+    # Ensure column exists to avoid SQL errors
     if 'size_length_x_width_x_height__in' not in shipped_orders.columns:
         shipped_orders['size_length_x_width_x_height__in'] = None
         print("⚠️ Added missing column 'size_length_x_width_x_height__in' with nulls")

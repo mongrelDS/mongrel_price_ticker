@@ -372,8 +372,8 @@ async def main():
     browser = None
     try:
         async with async_playwright() as p:
-            # Configure browser launch based on working proxy
-            launch_options = {"headless": False}
+            # Configure browser launch based on working proxy (cron-safe headless mode)
+            launch_options = {"headless": True}
             
             if WORKING_PROXY == "primary":
                 # Use primary proxy
@@ -387,15 +387,7 @@ async def main():
             browser = await p.chromium.launch(**launch_options)
             page = await browser.new_page()
             
-            # Set up additional proxy headers if using primary proxy
-            if WORKING_PROXY == "primary":
-                try:
-                    proxy_config = get_proxy_for_playwright()
-                    if proxy_config and 'server' in proxy_config:
-                        await page.context.set_extra_http_headers(proxy_config)
-                        logger.info("Primary proxy headers applied successfully")
-                except Exception as e:
-                    logger.warning(f"Proxy header setup failed: {e}")
+            # Note: No extra HTTP headers are required for proxy; Playwright proxy is configured at launch
             
             # --- Loop Through Each Link in the DataFrame ---
             total_urls = len(df_link)

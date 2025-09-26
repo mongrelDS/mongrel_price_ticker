@@ -41,10 +41,8 @@ class ProxyConfig:
         self.port = int(os.getenv('PROXY_PORT', 7777))
         
         # Load proxy credentials from environment variable
+        # NOTE: Do not raise if missing; allow callers to validate and fall back to direct connections
         self.credentials = self._load_credentials_from_env()
-        
-        if not self.credentials:
-            raise ValueError("No proxy credentials configured. Please set the PROXY_CREDENTIALS environment variable.")
 
         self.current_credential_index = 0
         self.switch_threshold = int(os.getenv('PROXY_SWITCH_THRESHOLD', 5))  # Switch after 5 uses
@@ -75,6 +73,8 @@ class ProxyConfig:
     
     def get_current_credential(self) -> ProxyCredentials:
         """Get the current active credential"""
+        if not self.credentials:
+            raise ValueError("No proxy credentials available. Configure PROXY_CREDENTIALS or avoid proxy usage.")
         return self.credentials[self.current_credential_index]
     
     def switch_to_next_credential(self) -> ProxyCredentials:

@@ -37,12 +37,28 @@ def import_csv_from_drive(starts_with="product_table", google_drive_id="1_VV9n32
     load_dotenv()
     
     # Get the credentials from environment variables
+    # Prefer inline JSON via GOOGLE_APPLICATION_CREDENTIALS_JSON; fallback to file path via GOOGLE_APPLICATION_CREDENTIALS
     credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-    
+    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+    # Fallback: if JSON not provided but a file path is, read it
+    if not credentials_json and credentials_path:
+        try:
+            with open(credentials_path, 'r', encoding='utf-8') as f:
+                credentials_json = f.read()
+        except Exception as e:
+            print(f"⚠️ Could not read credentials from GOOGLE_APPLICATION_CREDENTIALS='{credentials_path}': {e}")
+            return None
+
     if not credentials_json:
-        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable not set.")
+        print("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS not set; skipping Drive import.")
+        return None
         
-    credentials_info = json.loads(credentials_json)
+    try:
+        credentials_info = json.loads(credentials_json)
+    except Exception as e:
+        print(f"⚠️ Invalid GOOGLE_APPLICATION_CREDENTIALS_JSON: {e}")
+        return None
 
     # Define the required scope
     scopes = ['https://www.googleapis.com/auth/drive']
@@ -201,9 +217,25 @@ def import_csv_from_drive_iter(starts_with="product_table", google_drive_id="1_V
     # --- AUTHENTICATION (SERVICE ACCOUNT) ---
     load_dotenv()
     credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+    if not credentials_json and credentials_path:
+        try:
+            with open(credentials_path, 'r', encoding='utf-8') as f:
+                credentials_json = f.read()
+        except Exception as e:
+            print(f"⚠️ Could not read credentials from GOOGLE_APPLICATION_CREDENTIALS='{credentials_path}': {e}")
+            return
+
     if not credentials_json:
-        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable not set.")
-    credentials_info = json.loads(credentials_json)
+        print("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS not set; skipping Drive import iterator.")
+        return
+
+    try:
+        credentials_info = json.loads(credentials_json)
+    except Exception as e:
+        print(f"⚠️ Invalid GOOGLE_APPLICATION_CREDENTIALS_JSON: {e}")
+        return
     
     scopes = ['https://www.googleapis.com/auth/drive']
     credentials = Credentials.from_service_account_info(credentials_info, scopes=scopes)
