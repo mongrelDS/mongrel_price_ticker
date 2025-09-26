@@ -10,8 +10,8 @@ from typing import Callable, Optional
 from dotenv import load_dotenv
 import json
 
-# Import centralized functions from the same directory
-from .cleanup_column_names import clean_column_names
+# Import centralized functions using absolute import for cron compatibility
+from cleanup_column_names import clean_column_names
 
 def import_csv_from_drive(starts_with="product_table", google_drive_id="1_VV9n32idhpCu4H017Z_9ZKo80DLaSbn", chunk_size=None, on_chunk: Optional[Callable[[pd.DataFrame], Optional[pd.DataFrame]]] = None, return_combined: bool = True):
     """
