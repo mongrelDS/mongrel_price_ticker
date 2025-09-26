@@ -34,6 +34,24 @@ def sheets_to_dataframe(sheet_name, data_range, spreadsheet_id, key_file_path=No
     if key_file_path is None:
         key_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'credentials', 'tactical-elf-452207-m9-1f0520891d95.json')
     
+    # Check if credentials file exists and is valid
+    if not os.path.isfile(key_file_path):
+        print(f"❌ Service account key not found at: {key_file_path}")
+        print("📋 Please follow the setup instructions in credentials/README.md")
+        return pd.DataFrame()
+    
+    # Check if the file contains placeholder values
+    try:
+        with open(key_file_path, 'r') as f:
+            content = f.read()
+            if 'PLACEHOLDER' in content:
+                print(f"⚠️  Credentials file contains placeholder values: {key_file_path}")
+                print("📋 Please replace with actual service account credentials (see credentials/README.md)")
+                return pd.DataFrame()
+    except Exception as e:
+        print(f"❌ Error reading credentials file: {e}")
+        return pd.DataFrame()
+    
     # Authenticate using service account credentials
     try:
         credentials = Credentials.from_service_account_file(key_file_path, scopes=SCOPES)
@@ -41,6 +59,7 @@ def sheets_to_dataframe(sheet_name, data_range, spreadsheet_id, key_file_path=No
         print("✅ Authentication successful using Service Account.")
     except Exception as e:
         print(f"❌ Authentication failed: {e}")
+        print("📋 Please check your credentials file and setup (see credentials/README.md)")
         return pd.DataFrame()
     
     try:

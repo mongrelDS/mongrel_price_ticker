@@ -40,6 +40,24 @@ def write_df_to_sheet(df_to_display, spreadsheet_id, sheet_name, cell_loc, key_f
         print(f"❌ Error: The provided data is not a valid pandas DataFrame.")
         return False
 
+    # Check if credentials file exists and is valid
+    if not os.path.isfile(key_file_path):
+        print(f"❌ Service account key not found at: {key_file_path}")
+        print("📋 Please follow the setup instructions in credentials/README.md")
+        return False
+    
+    # Check if the file contains placeholder values
+    try:
+        with open(key_file_path, 'r') as f:
+            content = f.read()
+            if 'PLACEHOLDER' in content:
+                print(f"⚠️  Credentials file contains placeholder values: {key_file_path}")
+                print("📋 Please replace with actual service account credentials (see credentials/README.md)")
+                return False
+    except Exception as e:
+        print(f"❌ Error reading credentials file: {e}")
+        return False
+
     # Authenticate using service account credentials
     try:
         credentials = Credentials.from_service_account_file(key_file_path, scopes=SCOPES)
@@ -47,6 +65,7 @@ def write_df_to_sheet(df_to_display, spreadsheet_id, sheet_name, cell_loc, key_f
         print("✅ Authentication successful using Service Account.")
     except Exception as e:
         print(f"❌ Authentication failed: {e}")
+        print("📋 Please check your credentials file and setup (see credentials/README.md)")
         return False
 
     try:

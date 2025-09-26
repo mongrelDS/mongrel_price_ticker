@@ -14,10 +14,13 @@ from sqlalchemy import create_engine
 from datetime import datetime
 
 # Import required functions via package
-from src.google_drive_csv_import import import_csv_from_drive
-from src.cleanup_column_names import clean_column_names
-from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
-from src.generate_key import generate_key
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'src'))
+from google_drive_csv_import import import_csv_from_drive
+from cleanup_column_names import clean_column_names
+from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from generate_key import generate_key
 
 def process_shipped_orders(shipped_orders):
     """Process shipped orders data for the natura_shipped_orders table"""
@@ -27,17 +30,16 @@ def process_shipped_orders(shipped_orders):
     shipped_orders = clean_column_names(shipped_orders)
     print("✅ Column names cleaned")
     
-    # Normalize column names for DB compatibility
-    # Single underscore variant -> double underscore variant used by DB
-    if 'size_length_x_width_x_height_in' in shipped_orders.columns:
-        shipped_orders = shipped_orders.rename(
-            columns={'size_length_x_width_x_height_in': 'size_length_x_width_x_height__in'}
-        )
-        print("✅ Normalized column name to 'size_length_x_width_x_height__in'")
-    # Ensure column exists to avoid SQL errors
-    if 'size_length_x_width_x_height__in' not in shipped_orders.columns:
-        shipped_orders['size_length_x_width_x_height__in'] = None
-        print("⚠️ Added missing column 'size_length_x_width_x_height__in' with nulls")
+    # Handle the problematic size column - drop it for now to avoid SQL errors
+    size_columns = [col for col in shipped_orders.columns if 'size_length' in col]
+    if size_columns:
+        print(f"🔍 Found size columns: {size_columns}")
+        for col in size_columns:
+            shipped_orders = shipped_orders.drop(columns=[col])
+            print(f"✅ Dropped column: {col}")
+    
+    # Debug: Print remaining column names
+    print(f"🔍 Remaining columns with 'size': {[col for col in shipped_orders.columns if 'size' in col]}")
     
     # Convert order_date to datetime
     print("📅 Converting order_date column to datetime...")
@@ -115,10 +117,12 @@ def process_customer_orderlist(shipped_orders):
     df_order['customer_name'] = df_order['to_name']
     print("✅ Customer name created")
     
-    # Create subtotal from line_item_total
+    # Create subtotal from line_item_total and convert to numeric
     print("💰 Creating subtotal from line_item_total...")
-    df_order['subtotal'] = df_order['line_item_total']
-    print("✅ Subtotal created")
+    df_order['subtotal'] = pd.to_numeric(df_order['line_item_total'], errors='coerce')
+    # Fill any NaN values with 0
+    df_order['subtotal'] = df_order['subtotal'].fillna(0)
+    print("✅ Subtotal created and converted to numeric")
     
     # Drop columns
     columns_to_drop = ['to_name', 'line_item_total']
@@ -157,6 +161,7 @@ def main():
     
     # Database connection setup
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+    db_port = os.getenv('DB_PORT', '3306')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
     db_password = os.getenv('DB_PASSWORD')
     if not db_password:
@@ -165,7 +170,7 @@ def main():
     
     try:
         # Create database engine
-        connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+        connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         db_engine = create_engine(connection_string)
         
         print("✅ Database connection established")

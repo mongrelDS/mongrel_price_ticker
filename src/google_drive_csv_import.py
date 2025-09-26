@@ -10,7 +10,7 @@ from typing import Callable, Optional
 from dotenv import load_dotenv
 import json
 
-# Import centralized functions using absolute import for cron compatibility
+# Import centralized functions
 from cleanup_column_names import clean_column_names
 
 def import_csv_from_drive(starts_with="product_table", google_drive_id="1_VV9n32idhpCu4H017Z_9ZKo80DLaSbn", chunk_size=None, on_chunk: Optional[Callable[[pd.DataFrame], Optional[pd.DataFrame]]] = None, return_combined: bool = True):
@@ -48,11 +48,38 @@ def import_csv_from_drive(starts_with="product_table", google_drive_id="1_VV9n32
                 credentials_json = f.read()
         except Exception as e:
             print(f"⚠️ Could not read credentials from GOOGLE_APPLICATION_CREDENTIALS='{credentials_path}': {e}")
-            return None
+            credentials_json = None
 
+    # Final fallback: use project credentials JSON file if present
     if not credentials_json:
-        print("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS not set; skipping Drive import.")
-        return None
+        try:
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            default_key_path = os.path.join(
+                repo_root,
+                'credentials',
+                'tactical-elf-452207-m9-1f0520891d95.json'
+            )
+            
+            if not os.path.isfile(default_key_path):
+                print(f"❌ Service account key not found at: {default_key_path}")
+                print("📋 Please follow the setup instructions in credentials/README.md")
+                return None
+            
+            with open(default_key_path, 'r', encoding='utf-8') as f:
+                credentials_json = f.read()
+            
+            # Check if the file contains placeholder values
+            if 'PLACEHOLDER' in credentials_json:
+                print(f"⚠️  Credentials file contains placeholder values: {default_key_path}")
+                print("📋 Please replace with actual service account credentials (see credentials/README.md)")
+                return None
+            
+            print("🔑 Loaded service account credentials from project credentials directory.")
+        except Exception as e:
+            print("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON/GOOGLE_APPLICATION_CREDENTIALS not set and project credentials file not found.")
+            print(f"   Details: {e}")
+            print("📋 Please follow the setup instructions in credentials/README.md")
+            return None
         
     try:
         credentials_info = json.loads(credentials_json)
@@ -225,11 +252,23 @@ def import_csv_from_drive_iter(starts_with="product_table", google_drive_id="1_V
                 credentials_json = f.read()
         except Exception as e:
             print(f"⚠️ Could not read credentials from GOOGLE_APPLICATION_CREDENTIALS='{credentials_path}': {e}")
-            return
+            credentials_json = None
 
     if not credentials_json:
-        print("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS not set; skipping Drive import iterator.")
-        return
+        try:
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            default_key_path = os.path.join(
+                repo_root,
+                'credentials',
+                'tactical-elf-452207-m9-1f0520891d95.json'
+            )
+            with open(default_key_path, 'r', encoding='utf-8') as f:
+                credentials_json = f.read()
+            print("🔑 Loaded service account credentials from project credentials directory (iterator).")
+        except Exception as e:
+            print("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON/GOOGLE_APPLICATION_CREDENTIALS not set and project credentials file not found (iterator).")
+            print(f"   Details: {e}")
+            return
 
     try:
         credentials_info = json.loads(credentials_json)

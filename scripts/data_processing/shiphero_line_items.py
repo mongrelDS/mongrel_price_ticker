@@ -8,11 +8,15 @@ from datetime import datetime, timedelta
 from playwright.async_api import async_playwright, expect
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
+from dotenv import load_dotenv
 
-# Use absolute imports from the project package
-from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
-from src.generate_key import generate_key
-from src.cleanup_column_names import clean_column_names
+# Import required functions via package
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'src'))
+from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from generate_key import generate_key
+from cleanup_column_names import clean_column_names
 
 # --- Functions now imported from src directory ---
 
@@ -76,9 +80,16 @@ async def main(db_engine):
                     "Order Number": cells[12], "Customer Email": cells[15]
                 })
 
-            # NEW: Wait for any potential overlays to disappear before interacting further
-            # This directly solves the "intercepts pointer events" error.
-            await page.locator(".modal-backdrop").wait_for(state="hidden", timeout=15000)
+            # Wait for any potential overlays to disappear before interacting further
+            try:
+                await page.locator(".modal-backdrop").wait_for(state="hidden", timeout=10000)
+            except:
+                pass  # Continue if no modal backdrop
+            
+            try:
+                await page.locator("#line_items_processing").wait_for(state="hidden", timeout=10000)
+            except:
+                pass  # Continue if no processing overlay
 
             # Check if the 'Next' button is disabled (last page)
             next_button = page.locator("#line_items_next")
@@ -86,9 +97,14 @@ async def main(db_engine):
                 print("Last page reached. Ending scrape.")
                 break # Exit the loop if the button is disabled
 
-            # If not disabled, click to go to the next page
-            await next_button.click()
-            await page.wait_for_load_state("networkidle")
+            # If not disabled, try to click to go to the next page with retry logic
+            try:
+                await next_button.click(timeout=10000)
+                await page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception as e:
+                print(f"Error clicking next button on page {i + 1}: {e}")
+                print("Stopping scrape due to navigation error.")
+                break
 
         await browser.close()
 
@@ -147,8 +163,12 @@ async def main(db_engine):
 
 # --- Script Execution ---
 if __name__ == "__main__":
+    # Load environment variables
+    load_dotenv()
+    
     # Database Credentials & Connection (using environment variables)
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+    db_port = os.getenv('DB_PORT', '3306')
     db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
     db_password = os.getenv('DB_PASSWORD')
@@ -157,7 +177,7 @@ if __name__ == "__main__":
         raise ValueError("DB_PASSWORD environment variable is required (no default in repo)")
 
     # Create the SQLAlchemy Engine
-    connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+    connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
     engine = create_engine(connection_string, poolclass=NullPool)
 
     # Run the main async function

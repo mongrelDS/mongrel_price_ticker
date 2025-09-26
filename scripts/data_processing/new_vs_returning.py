@@ -29,11 +29,35 @@ SERVICE_ACCOUNT_KEY = os.path.join(
 
 def read_sheet_values(spreadsheet_id: str, sheet_name: str, range_a1: str) -> list[list[str]]:
     scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_KEY, scopes=scopes)
-    service = build('sheets', 'v4', credentials=creds)
-    rng = f"'{sheet_name}'!{range_a1}" if ' ' in sheet_name else f"{sheet_name}!{range_a1}"
-    resp = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=rng).execute()
-    return resp.get('values', [])
+    
+    # Check if credentials file exists and is valid
+    if not os.path.isfile(SERVICE_ACCOUNT_KEY):
+        print(f"❌ Service account key not found at: {SERVICE_ACCOUNT_KEY}")
+        print("📋 Please follow the setup instructions in credentials/README.md")
+        return []
+    
+    # Check if the file contains placeholder values
+    try:
+        with open(SERVICE_ACCOUNT_KEY, 'r') as f:
+            content = f.read()
+            if 'PLACEHOLDER' in content:
+                print(f"⚠️  Credentials file contains placeholder values: {SERVICE_ACCOUNT_KEY}")
+                print("📋 Please replace with actual service account credentials (see credentials/README.md)")
+                return []
+    except Exception as e:
+        print(f"❌ Error reading credentials file: {e}")
+        return []
+    
+    try:
+        creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_KEY, scopes=scopes)
+        service = build('sheets', 'v4', credentials=creds)
+        rng = f"'{sheet_name}'!{range_a1}" if ' ' in sheet_name else f"{sheet_name}!{range_a1}"
+        resp = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=rng).execute()
+        return resp.get('values', [])
+    except Exception as e:
+        print(f"❌ Failed to read from Google Sheets: {e}")
+        print("📋 Please check your credentials and sheet permissions (see credentials/README.md)")
+        return []
 
 
 def _normalize_email_series(s: pd.Series) -> pd.Series:

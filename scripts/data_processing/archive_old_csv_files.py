@@ -113,15 +113,27 @@ def build_drive_service_from_service_account():
     scopes = ['https://www.googleapis.com/auth/drive']
     try:
         if not os.path.isfile(key_path):
-            raise FileNotFoundError(f"Service account key not found at: {key_path}")
+            print(f"❌ Service account key not found at: {key_path}")
+            print("📋 Please follow the setup instructions in credentials/README.md")
+            print("🔧 You can also set GOOGLE_APPLICATION_CREDENTIALS environment variable")
+            return None
+
+        # Check if the file contains placeholder values
+        with open(key_path, 'r') as f:
+            content = f.read()
+            if 'PLACEHOLDER' in content:
+                print(f"⚠️  Credentials file contains placeholder values: {key_path}")
+                print("📋 Please replace with actual service account credentials (see credentials/README.md)")
+                return None
 
         credentials = Credentials.from_service_account_file(key_path, scopes=scopes)
         # Disable discovery cache to avoid cron permission/cache issues
         service = build('drive', 'v3', credentials=credentials, cache_discovery=False)
-        print("Initialized Drive service via service account.")
+        print("✅ Initialized Drive service via service account.")
         return service
     except Exception as e:
-        print(f"Failed to initialize Drive service: {e}")
+        print(f"❌ Failed to initialize Drive service: {e}")
+        print("📋 Please check your credentials file and setup (see credentials/README.md)")
         return None
 
 

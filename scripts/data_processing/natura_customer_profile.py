@@ -11,14 +11,15 @@ from cleanup_column_names import clean_column_names
 load_dotenv()
 
 # --- 1. Database Connection Setup ---
-# Get credentials from environment variables, with default values
-db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+# Get credentials from environment variables, with default values for local database
+db_host = os.getenv('DB_HOST', '127.0.0.1')
 db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
-db_password = os.getenv('DB_PASSWORD', 'defaultpassword')
+db_password = os.getenv('DB_PASSWORD', '6r9lHgT9fnfqpQkDjXmoPJbMXINl4Gl3LFLYq9Ke')
 db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
+db_port = os.getenv('DB_PORT', '30306')
 
 # Create the database connection string for SQLAlchemy
-connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 # --- 2. Create DataFrame from SQL Query ---
 try:
@@ -40,6 +41,8 @@ try:
             natura_customer_orderlist
         WHERE
             order_date IS NOT NULL
+            AND email IS NOT NULL
+            AND email != ''
     )
     SELECT
         email,

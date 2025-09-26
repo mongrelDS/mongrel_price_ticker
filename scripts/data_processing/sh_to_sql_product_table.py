@@ -10,18 +10,13 @@ import sys
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-# Ensure project root and src are on sys.path for reliable imports under cron
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-SRC_DIR = os.path.join(PROJECT_ROOT, 'src')
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-
-# Import required functions from src package
-from src.google_drive_csv_import import import_csv_from_drive
-from src.cleanup_column_names import clean_column_names
-from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+# Import required functions via package
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'src'))
+from google_drive_csv_import import import_csv_from_drive
+from cleanup_column_names import clean_column_names
+from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
 
 def main():
     """Main function to process product data from Google Drive to MySQL"""
@@ -31,6 +26,7 @@ def main():
     
     # Database connection setup
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+    db_port = os.getenv('DB_PORT', '3306')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
     db_password = os.getenv('DB_PASSWORD')
     if not db_password:
@@ -39,7 +35,7 @@ def main():
     
     try:
         # Create database engine
-        connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+        connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         db_engine = create_engine(connection_string)
         
         print("✅ Database connection established")

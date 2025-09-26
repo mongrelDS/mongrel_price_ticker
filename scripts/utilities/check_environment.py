@@ -37,9 +37,21 @@ def check_environment():
     # Check Google Drive credentials
     creds_file = '/home/mongreldatalab/mongrel_price_ticker/credentials/tactical-elf-452207-m9-1f0520891d95.json'
     if os.path.exists(creds_file):
-        print(f"✅ Google Drive credentials found: {creds_file}")
+        # Check if it contains placeholder values
+        try:
+            with open(creds_file, 'r') as f:
+                content = f.read()
+                if 'PLACEHOLDER' in content:
+                    print(f"⚠️ Google Drive credentials found but contains placeholder values: {creds_file}")
+                    print("📋 Please replace with actual service account credentials (see credentials/README.md)")
+                else:
+                    print(f"✅ Google Drive credentials found and appear valid: {creds_file}")
+        except Exception as e:
+            print(f"⚠️ Google Drive credentials found but cannot be read: {creds_file}")
+            print(f"   Error: {e}")
     else:
-        print(f"⚠️ Google Drive credentials not found: {creds_file}")
+        print(f"❌ Google Drive credentials not found: {creds_file}")
+        print("📋 Please follow the setup instructions in credentials/README.md")
     
     return True
 

@@ -12,10 +12,10 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from datetime import datetime
 
-# Add src directory to path
-sys.path.append('/home/mongreldatalab/mongrel_price_ticker/src')
-
-# Import required functions
+# Import required functions via package
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'src'))
 from google_drive_csv_import import import_csv_from_drive
 from cleanup_column_names import clean_column_names
 from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
@@ -31,6 +31,7 @@ def main():
     
     # Database connection setup
     db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+    db_port = os.getenv('DB_PORT', '3306')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
     db_password = os.getenv('DB_PASSWORD')
     if not db_password:
@@ -39,7 +40,7 @@ def main():
     
     try:
         # Create database engine
-        connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+        connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         db_engine = create_engine(connection_string)
         
         print("✅ Database connection established")

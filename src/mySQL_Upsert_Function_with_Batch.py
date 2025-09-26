@@ -6,7 +6,10 @@ import math # Added for ceiling division
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import NullPool
 import json
-from src.database_config import get_database_engine, get_database_credentials
+try:
+    from src.database_config import get_database_engine, get_database_credentials
+except ImportError:
+    from database_config import get_database_engine, get_database_credentials
 
 # --- MODIFIED FUNCTION ---
 def upsert_df_to_mysql(
