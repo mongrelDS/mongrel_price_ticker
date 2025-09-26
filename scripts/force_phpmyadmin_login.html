@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>phpMyAdmin Login - Fixed</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; background: #f5f5f5; }
+        .login-container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { background: #007cba; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .btn:hover { background: #005a87; }
+        .info { background: #e7f3ff; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>🔐 phpMyAdmin Login</h2>
+        
+        <div class="info">
+            <strong>Your Database Credentials:</strong><br>
+            <strong>Server:</strong> 127.0.0.1:30306<br>
+            <strong>Username:</strong> u488367489_mongrel_data<br>
+            <strong>Password:</strong> 6r9lHgT9fnfqpQkDjXmoPJbMXINl4Gl3LFLYq9Ke
+        </div>
+
+        <form method="post" action="http://localhost/phpmyadmin/index.php?route=/">
+            <input type="hidden" name="route" value="/">
+            <input type="hidden" name="lang" value="en">
+            <input type="hidden" name="server" value="1">
+            
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" name="pma_username" id="username" value="u488367489_mongrel_data" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" name="pma_password" id="password" value="6r9lHgT9fnfqpQkDjXmoPJbMXINl4Gl3LFLYq9Ke" required>
+            </div>
+            
+            <button type="submit" class="btn">🚀 Login to phpMyAdmin</button>
+        </form>
+        
+        <p style="margin-top: 20px; font-size: 14px; color: #666;">
+            <strong>Alternative:</strong> If this doesn't work, use the command line:<br>
+            <code>mysql -h 127.0.0.1 -P 30306 -u u488367489_mongrel_data -p6r9lHgT9fnfqpQkDjXmoPJbMXINl4Gl3LFLYq9Ke</code>
+        </p>
+    </div>
+</body>
+</html>
