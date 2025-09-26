@@ -21,7 +21,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 
 # Database connection setup (using environment variables)
-db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+db_host = os.getenv('DB_HOST', '127.0.0.1')
 db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
 db_password = os.getenv('DB_PASSWORD')
 if not db_password:

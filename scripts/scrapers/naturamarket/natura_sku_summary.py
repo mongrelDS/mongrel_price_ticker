@@ -2,10 +2,13 @@
 import pandas as pd
 import numpy as np
 
-from src.database_config import get_database_engine
-from src.cleanup_column_names import clean_column_names
-from src.mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
-from src.function_extract_volume import extract_volume
+import sys
+import os
+sys.path.append('/home/mongreldatalab/mongrel_price_ticker/src')
+from database_config import get_database_engine
+from cleanup_column_names import clean_column_names
+from mySQL_Upsert_Function_with_Batch import upsert_df_to_mysql
+from function_extract_volume import extract_volume
 
 
 def get_30d_sales(engine) -> pd.DataFrame:

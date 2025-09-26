@@ -15,7 +15,7 @@ def check_environment():
     
     # Check database configuration
     db_config = {
-        'DB_HOST': os.getenv('DB_HOST', 'srv1978.hstgr.io'),
+        'DB_HOST': os.getenv('DB_HOST', '127.0.0.1'),
         'DB_USER': os.getenv('DB_USER', 'u488367489_mongrel_data'),
         'DB_PASSWORD': os.getenv('DB_PASSWORD', 'defaultpassword'),
         'DB_NAME': os.getenv('DB_NAME', 'u488367489_Price_Ticker')

@@ -83,8 +83,8 @@ def main():
     load_dotenv()
     
     # Database connection setup
-    db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
-    db_port = os.getenv('DB_PORT', '3306')
+    db_host = os.getenv('DB_HOST', '127.0.0.1')
+    db_port = os.getenv('DB_PORT', '30306')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
     db_password = os.getenv('DB_PASSWORD')
     if not db_password:

@@ -31,7 +31,7 @@ def get_price_30d(domain='well.ca', table_name='df_ticker', verbose=True):
     """
     
     # Database connection setup (using environment variables)
-    db_host = os.getenv('DB_HOST', 'srv1978.hstgr.io')
+    db_host = os.getenv('DB_HOST', '127.0.0.1')
     db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
     db_password = os.getenv('DB_PASSWORD')
     if not db_password:

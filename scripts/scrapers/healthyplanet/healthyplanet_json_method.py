@@ -10,11 +10,14 @@ from curl_cffi import requests
 from pydantic import BaseModel, ValidationError
 from rich import print
 
-from src.database_config import get_database_engine
-from src.mySQL_Upsert_Function_with_Batch import read_mysql_to_df, upsert_df_to_mysql
-from src.get_domain import get_domain
-from src.generate_key import generate_key
-from src.function_extract_volume import extract_volume
+import sys
+import os
+sys.path.append('/home/mongreldatalab/mongrel_price_ticker/src')
+from database_config import get_database_engine
+from mySQL_Upsert_Function_with_Batch import read_mysql_to_df, upsert_df_to_mysql
+from get_domain import get_domain
+from generate_key import generate_key
+from function_extract_volume import extract_volume
 
 
 DOMAIN = "healthyplanetcanada.com"
