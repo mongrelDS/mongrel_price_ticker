@@ -25,9 +25,10 @@ db_password = os.getenv('DB_PASSWORD')
 if not db_password:
     raise ValueError("DB_PASSWORD environment variable is required (no default in repo)")
 db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
+db_port = os.getenv('DB_PORT', '30306')
 
 # Create database connection string
-connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 # Create database engine
 db_engine = create_engine(connection_string, poolclass=NullPool)

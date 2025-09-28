@@ -7,9 +7,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import NullPool
 import json
 try:
-    from src.database_config import get_database_engine, get_database_credentials
-except ImportError:
     from database_config import get_database_engine, get_database_credentials
+except ImportError:
+    from src.database_config import get_database_engine, get_database_credentials
 
 # --- MODIFIED FUNCTION ---
 def upsert_df_to_mysql(

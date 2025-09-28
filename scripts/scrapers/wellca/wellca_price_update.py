@@ -182,16 +182,22 @@ async def scrape_urls_async(urls):
     Async function to scrape multiple URLs using a shared browser instance.
     More efficient than creating a new browser for each URL.
     """
-    proxy_config = get_proxy_for_requests()
-    browser_options = {
-        'headless': True,
-        'timeout': 60000
-    }
-    
-    # Add proxy configuration if available
-    if proxy_config and 'http' in proxy_config:
-        proxy_url = proxy_config['http']
-        browser_options['proxy'] = {'server': proxy_url}
+    try:
+        proxy_config = get_proxy_for_requests()
+        browser_options = {
+            'headless': True,
+            'timeout': 60000
+        }
+        # Add proxy configuration if available
+        if proxy_config and 'http' in proxy_config:
+            proxy_url = proxy_config['http']
+            browser_options['proxy'] = {'server': proxy_url}
+    except ValueError as e:
+        logger.warning(f"Proxy configuration failed: {e}. Continuing without proxy.")
+        browser_options = {
+            'headless': True,
+            'timeout': 60000
+        }
     
     async with async_playwright() as p:
         browser = await p.firefox.launch(**browser_options)
@@ -223,15 +229,22 @@ async def scrape_urls_batched_async(urls, batch_size: int = 50, max_concurrency:
     Async scraping with a single shared browser and bounded concurrency.
     Processes URLs in batches to control memory usage.
     """
-    proxy_config = get_proxy_for_requests()
-    browser_options = {
-        'headless': True,
-        'timeout': 60000
-    }
-
-    if proxy_config and 'http' in proxy_config:
-        proxy_url = proxy_config['http']
-        browser_options['proxy'] = {'server': proxy_url}
+    try:
+        proxy_config = get_proxy_for_requests()
+        browser_options = {
+            'headless': True,
+            'timeout': 60000
+        }
+        # Add proxy configuration if available
+        if proxy_config and 'http' in proxy_config:
+            proxy_url = proxy_config['http']
+            browser_options['proxy'] = {'server': proxy_url}
+    except ValueError as e:
+        logger.warning(f"Proxy configuration failed: {e}. Continuing without proxy.")
+        browser_options = {
+            'headless': True,
+            'timeout': 60000
+        }
 
     async with async_playwright() as p:
         browser = await p.firefox.launch(**browser_options)
@@ -287,6 +300,7 @@ def main():
 
     # Database connection setup (using environment variables)
     db_host = os.getenv('DB_HOST')
+    db_port = os.getenv('DB_PORT', '30306')
     db_user = os.getenv('DB_USER')
     db_password = os.getenv('DB_PASSWORD')
     db_name = os.getenv('DB_NAME')
@@ -298,7 +312,7 @@ def main():
         raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
     # Create database connection string
-    connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+    connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     # Create database engine
     db_engine = create_engine(connection_string, poolclass=NullPool)

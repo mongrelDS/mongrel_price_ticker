@@ -22,6 +22,7 @@ from sqlalchemy.pool import NullPool
 
 # Database connection setup (using environment variables)
 db_host = os.getenv('DB_HOST', '127.0.0.1')
+db_port = os.getenv('DB_PORT', '30306')
 db_user = os.getenv('DB_USER', 'u488367489_mongrel_data')
 db_password = os.getenv('DB_PASSWORD')
 if not db_password:
@@ -29,7 +30,7 @@ if not db_password:
 db_name = os.getenv('DB_NAME', 'u488367489_Price_Ticker')
 
 # Create database connection string
-connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
+connection_string = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 # Create database engine
 db_engine = create_engine(connection_string, poolclass=NullPool)
@@ -87,7 +88,7 @@ all_pdp_links = list(set(all_pdp_links))
 print(f"\nTotal unique product links found: {len(all_pdp_links)}")
 
 # Create DataFrame
-df_pdp_links = pd.DataFrame(all_pdp_links, columns=['product_url'])
+df_pdp_links = pd.DataFrame(all_pdp_links, columns=['link'])
 
 # Display sample
 print("\nSample product links:")
@@ -96,7 +97,7 @@ print(df_pdp_links.head())
 # Upload to database
 if not df_pdp_links.empty:
     print("\nUploading to database...")
-    upsert_df_to_mysql(df=df_pdp_links, engine=db_engine, target_table='product_links', key_col='product_url')
+    upsert_df_to_mysql(df=df_pdp_links, engine=db_engine, target_table='product_links', key_col='link')
     print("✅ Database upload complete!")
 else:
     print("No product links found to upload.")
